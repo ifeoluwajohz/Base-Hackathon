@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const User = require('../models/User');
+const Job = require('../models/Job');
 const { isEmail } = require('validator');
 
 
@@ -74,7 +75,7 @@ module.exports.login_get = (req, res) =>{
 }
 
 module.exports.register_post = async (req, res) =>{
-    const { fullname, email, password, bio, location, workExperience,  availableJobs , gender, role, username, wallet_address, ratings, profilePicture } = req.body;
+    const { fullname, email, password, bio, location, workExperience, gender, role, username, wallet_address, ratings, profilePicture } = req.body;
     
 
     try{
@@ -88,7 +89,7 @@ module.exports.register_post = async (req, res) =>{
         if (!validator.isStrongPassword(password)) {
             throw Error('Password not strong enough')
         }
-        const user = await User.create({fullname, email, password,workExperience, availableJobs , bio, location , gender, role, username, wallet_address, ratings, profilePicture});
+        const user = await User.create({fullname, email, password,workExperience , bio, location , gender, role, username, wallet_address, ratings, profilePicture});
         // const json = res.locals.user;
 
         const token = createToken(user._id);
@@ -264,9 +265,8 @@ module.exports.update_user_patch = async (req, res) => {
 };
 
 
-//jobs contraollers
 module.exports.post_related_jobs = async (req, res) => {
-    const walletAddress = req.params.wallet_address; // Assuming wallet_address is used for identification
+    const walletAddress = req.params.wallet_address;
     const { title, description, salary } = req.body;
 
     try {
@@ -290,11 +290,12 @@ module.exports.post_related_jobs = async (req, res) => {
         const newJob = {
             title,
             description,
-            salary
+            salary,
+            stillAvailable: true
         };
 
-        // Add the new job to the availableJobs array
-        user.availableJobs.push(newJob);
+        // Add the new job to the jobsCreated array
+        user.jobsCreated.push(newJob);
 
         // Save the user with the updated jobs
         await user.save();
@@ -308,7 +309,6 @@ module.exports.post_related_jobs = async (req, res) => {
         res.status(500).json({ err: 'An error occurred while posting the job' });
     }
 }
-
 
   module.exports.get_related_jobs = async (req, res) => {
     const walletAddress = req.params.wallet_address; // Assuming you're using wallet_address to identify the user
@@ -362,3 +362,101 @@ module.exports.post_related_jobs = async (req, res) => {
         return res.status(500).json({ err: 'An error occurred while fetching related jobs' });
     }
 };
+
+module.exports.list_jobs_for_user = async (req, res) => {
+    const { wallet_address } = req.params; // Get user ID from params
+
+    try {
+        // Fetch the user based on wallet_address
+        const user = await User.findOne({ wallet_address });
+
+        if (!user) {
+            return res.status(404).json({ err: 'User not found' });
+        }
+
+        // Extract keywords from the user's bio and work experience
+        const keywords = [];
+        if (user.bio) {
+            keywords.push(...user.bio.split(' ')); // Split bio into words (basic example)
+        }
+
+        if (user.workExperience) {
+            user.workExperience.forEach(exp => {
+                if (exp.company) keywords.push(exp.company);
+                if (exp.position) keywords.push(exp.position);
+            });
+        }
+
+        // Query for jobs based on keywords (matching title or description)
+        const matchingJobs = await Job.find({
+            $or: [
+                { title: { $regex: new RegExp(keywords.join('|'), 'i') } },
+                { description: { $regex: new RegExp(keywords.join('|'), 'i') } }
+            ]
+        });
+
+        if (matchingJobs.length === 0) {
+            return res.status(404).json({ message: 'No jobs found matching your profile' });
+        }
+
+        res.status(200).json({
+            message: 'Matching jobs found',
+            jobs: matchingJobs
+        });
+
+    } catch (err) {
+        console.log({ err: err.message });
+        return res.status(500).json({ err: 'An error occurred while fetching jobs' });
+    }
+};
+
+module.exports.list_and_update_job_availability = async (req, res) => {
+    const walletAddress = req.params.wallet_address; // Assuming the user is identified by wallet_address
+    const { jobId, stillAvailable } = req.body; // Optional parameters for updating a job
+
+    try {
+        // Find the user by wallet_address
+        const user = await User.findOne({ wallet_address: walletAddress });
+        if (!user) {
+            return res.status(404).json({ err: 'User not found' });
+        }
+
+        // Check if the user is an employer
+        if (user.role !== 'employer') {
+            return res.status(403).json({ err: 'Only employers can manage jobs' });
+        }
+
+        // List all jobs created by the employer
+        const jobsCreated = user.jobsCreated;
+
+        // If no jobId is provided, just return the list of jobs
+        if (!jobId) {
+            return res.status(200).json({
+                message: `Total jobs created: ${jobsCreated.length}`,
+                jobs: jobsCreated
+            });
+        }
+
+        // If jobId is provided, update the availability of the job
+        const job = user.jobsCreated.id(jobId); // Get the specific job by ID
+        if (!job) {
+            return res.status(404).json({ err: 'Job not found or does not belong to this user' });
+        }
+
+        // Update the stillAvailable field
+        job.stillAvailable = stillAvailable !== undefined ? stillAvailable : job.stillAvailable;
+
+        // Save the user with the updated job availability
+        await user.save();
+
+        res.status(200).json({
+            message: 'Job availability updated successfully',
+            jobs: user.jobsCreated // Return updated jobs list
+        });
+
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ err: 'An error occurred while managing jobs' });
+    }
+};
+

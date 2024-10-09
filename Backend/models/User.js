@@ -88,10 +88,14 @@ const userSchema = new mongoose.Schema({
     profilePicture: { 
         type: String 
     }, // URL for profile picture
-    availableJobs: [{ 
-        title: String, 
-        description: String, 
-        salary: Number 
+    jobsCreated: [{
+        title: String,
+        description: String,
+        salary: Number,
+        stillAvailable: {
+            type: Boolean,
+            default: true
+        }
     }]
 
 })
