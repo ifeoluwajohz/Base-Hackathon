@@ -18,7 +18,9 @@ router.get('/logout', authController.logout_get,()=> {})
 router.patch('/update_user/:wallet_address', authController.update_user_patch,()=> {})
 
 router.post('/new_job/:wallet_address', authController.post_related_jobs,()=> {})
-router.get('/search_job/:wallet_address', authController.get_related_jobs,()=> {})
+router.get('/search_job/:wallet_address', authController.list_jobs_for_user,()=> {})
+router.patch('/update_job/:wallet_address', authController.list_and_update_job_availability,()=> {})
+
 
 
 // for the products
