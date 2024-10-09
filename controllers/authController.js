@@ -1,7 +1,6 @@
 require('dotenv').config();
 
 const User = require('../models/User');
-const Product = require('../models/Product')
 const { isEmail } = require('validator');
 
 
@@ -74,8 +73,8 @@ module.exports.login_get = (req, res) =>{
     res.redirect('/login')
 }
 
-module.exports.signup_post = async (req, res) =>{
-    const { fullname, email, password } = req.body;
+module.exports.register_post = async (req, res) =>{
+    const { fullname, email, password, bio, location, workExperience,  availableJobs , gender, role, username, wallet_address, ratings, profilePicture } = req.body;
     
 
     try{
@@ -89,7 +88,7 @@ module.exports.signup_post = async (req, res) =>{
         if (!validator.isStrongPassword(password)) {
             throw Error('Password not strong enough')
         }
-        const user = await User.create({fullname, email, password});
+        const user = await User.create({fullname, email, password,workExperience, availableJobs , bio, location , gender, role, username, wallet_address, ratings, profilePicture});
         // const json = res.locals.user;
 
         const token = createToken(user._id);
@@ -106,12 +105,12 @@ module.exports.signup_post = async (req, res) =>{
 }
 
 module.exports.login_post =  async(req, res) =>{
-    const { email, password} = req.body;
+    const { wallet_address, email, password} = req.body;
 
     try{
-        const Finduser = await User.findOne({ email });
+        const Finduser = await User.findOne({ wallet_address });
         if(!Finduser){
-            return res.status(400).json({ errors: 'Email not found in database'})
+            return res.status(400).json({ errors: 'User not found in database'})
         }
         const user = await User.login( email, password );
         const token = createToken(user._id);
@@ -213,47 +212,153 @@ module.exports.change_password_post = async (req, res)=> {
     }
 }
 
+//Additional code for job listing from here Onward.....
 
 
-module.exports.productId_get = async (req, res) => {
-    const {productId} = req.query;
-    try{
-        const product = await Product.findById(productId)
 
-        if(!product) {
-            return res.status(404).json({ message: 'Product not found'})
-        }
-        res.status(201).json(product)
-    }catch(err){
-        return res.status(400).json({err: err.message})
-    }
-}
-
-// for the products
-
-module.exports.product_get = async (req, res) => {
+module.exports.update_user_patch = async (req, res) => {
+    const { email, fullname, password, bio, location, workExperience, availableJobs, gender, role } = req.body;
+    const walletAddress = req.params.wallet_address; // Assumes wallet_address is provided in the URL
+    
     try {
-        const { searchTerm } = req.query;
-        let query = {};
-
-        if (searchTerm) {
-            query = {
-                $or: [
-                    { ProductName: { $regex: searchTerm, $options: 'i' } },
-                    { ProductDetail: { $regex: searchTerm, $options: 'i' } },
-                    { Category: { $regex: searchTerm, $options: 'i' } }
-                ],
-            };
+        // Use findOne to find user by wallet_address (instead of findById)
+        const user = await User.findOne({ wallet_address: walletAddress });
+        if (!user) {
+            return res.status(404).json({ err: 'User not found' });
         }
 
-        const products = await Product.find(query);
-        if (!res.headersSent) {
-            res.json(products);
+        // Check if email is being updated and already exists
+        if (email && email !== user.email) {
+            const emailExists = await User.findOne({ email });
+            if (emailExists) {
+                return res.status(400).json({ err: 'Email already exists in the database' });
+            }
         }
 
-    } catch (error) {
-        if (!res.headersSent) {
-            return res.status(500).json({ error: error.message });
+        // Check if password is provided and validate its strength
+        if (password && !validator.isStrongPassword(password)) {
+            return res.status(400).json({ err: 'Password not strong enough' });
         }
+
+        // Update user fields only if they exist in the request
+        if (fullname) user.fullname = fullname;
+        if (email) user.email = email;
+        if (password) user.password = password; // Ensure password is hashed before saving
+        if (bio) user.bio = bio;
+        if (location) user.location = location;
+        if (gender) user.gender = gender;
+        if (role) user.role = role;
+        if (workExperience) user.workExperience = workExperience;
+        if (availableJobs) user.availableJobs = availableJobs;
+
+
+
+        // Save updated user
+        await user.save();
+
+        res.status(200).json({ message: 'User updated successfully', user });
+    } catch (err) {
+        console.log({ err: err.message });
+        return res.status(400).json({ err: err.message });
+    }
+};
+
+
+//jobs contraollers
+module.exports.post_related_jobs = async (req, res) => {
+    const walletAddress = req.params.wallet_address; // Assuming wallet_address is used for identification
+    const { title, description, salary } = req.body;
+
+    try {
+        // Find the user by wallet_address
+        const user = await User.findOne({ wallet_address: walletAddress });
+        if (!user) {
+            return res.status(404).json({ err: 'User not found' });
+        }
+
+        // Check if the user is an employer
+        if (user.role !== 'employer') {
+            return res.status(403).json({ err: 'Only employers can post jobs' });
+        }
+
+        // Ensure that all required job fields are provided
+        if (!title || !description || !salary) {
+            return res.status(400).json({ err: 'Title, description, and salary are required to post a job' });
+        }
+
+        // Create the new job object
+        const newJob = {
+            title,
+            description,
+            salary
+        };
+
+        // Add the new job to the availableJobs array
+        user.availableJobs.push(newJob);
+
+        // Save the user with the updated jobs
+        await user.save();
+
+        res.status(200).json({
+            message: 'Job posted successfully',
+            job: newJob
+        });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ err: 'An error occurred while posting the job' });
     }
 }
+
+
+  module.exports.get_related_jobs = async (req, res) => {
+    const walletAddress = req.params.wallet_address; // Assuming you're using wallet_address to identify the user
+
+    try {
+        // Find the user by wallet_address
+        const user = await User.findOne({ wallet_address: walletAddress });
+        if (!user) {
+            return res.status(404).json({ err: 'User not found' });
+        }
+
+        // Extract user profile data for matching (bio and work experience)
+        const { bio, workExperience } = user;
+
+        // Combine bio and work experience into a search string
+        let searchKeywords = bio || ''; // Start with bio if it exists
+        workExperience.forEach(exp => {
+            searchKeywords += ` ${exp.company} ${exp.position}`;
+        });
+
+        // Create a regex to match jobs containing keywords from user's bio and work experience
+        const searchPattern = new RegExp(searchKeywords, 'i'); // 'i' for case-insensitive matching
+
+        // Find jobs posted by employers where the title or description matches the search pattern
+        const employersWithJobs = await User.find({
+            role: 'employer',
+            'availableJobs.title': searchPattern // Match jobs based on title or description
+        });
+
+        // Collect all related jobs
+        let relatedJobs = [];
+        employersWithJobs.forEach(employer => {
+            const matchingJobs = employer.availableJobs.filter(job => {
+                return searchPattern.test(job.title) || searchPattern.test(job.description);
+            });
+            relatedJobs = relatedJobs.concat(matchingJobs);
+        });
+
+        // If no jobs were found
+        if (relatedJobs.length === 0) {
+            return res.status(404).json({ message: 'No related jobs found' });
+        }
+
+        // Return the related jobs
+        res.status(200).json({
+            message: 'Related jobs found',
+            jobs: relatedJobs
+        });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ err: 'An error occurred while fetching related jobs' });
+    }
+};

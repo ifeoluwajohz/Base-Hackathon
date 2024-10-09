@@ -5,6 +5,11 @@ const bcrypt = require('bcrypt');
 
 
 const userSchema = new mongoose.Schema({
+    wallet_address: {
+        type: String,
+        required: true,
+        unique: true
+    },
     fullname:{
         type: String,
         required :true,
@@ -13,18 +18,13 @@ const userSchema = new mongoose.Schema({
     },
     username:{
         type: String,
-        lowercase: true
+        lowercase: true,
+        required: true ,
+        unique: true
+
     },
     home_address: {
         type: String,
-        lowercase: true
-    },
-    tel_number: {
-        type: Number,
-        unique: true
-    },
-    gender: {
-        type: Boolean,
         lowercase: true
     },
     email: {
@@ -47,16 +47,52 @@ const userSchema = new mongoose.Schema({
         type: Date,
         dafault: null
     },
-    cart: [
-        {
-            quantity: {type: Number, default: 1},
-            productId: {type: mongoose.Schema.Types.ObjectId, ref: 'Product'},
-        }
-    ],
-    Favorites: [{ 
-        type: Schema.Types.ObjectId, 
-        ref: 'Product' 
-    }] // Reference to Product model for favorites
+    bio: { 
+        type: String, 
+        required: true
+     },
+    dateOfBirth: { 
+        type: Date, 
+    },
+    workExperience: [{ 
+        company: String, 
+        position: String, 
+        years: Number 
+    }],
+    role: { 
+        type: String, 
+        enum: ['employer', 'employee'], 
+        required: true ,
+        lowercase: true,
+
+    },
+    location: { 
+        type: String, 
+        required: true 
+    },
+    ratings: { 
+        type: Number, 
+        min: 0, 
+        max: 5, 
+    },
+    feedbacks: [{ 
+        comment: String, 
+        date: { type: Date, default: Date.now } 
+    }],
+    gender: { 
+        type: String, 
+        enum: ['Male', 'Female', 'Other'], 
+        lowercase: true,
+
+    },
+    profilePicture: { 
+        type: String 
+    }, // URL for profile picture
+    availableJobs: [{ 
+        title: String, 
+        description: String, 
+        salary: Number 
+    }]
 
 })
 
