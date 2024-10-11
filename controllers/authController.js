@@ -37,68 +37,77 @@ async function generateOTP() {
 }
 
 
-const handleErrors = (err) => {
-    let errors = { email: "", password :""}
+// const handleErrors = (err) => {
+//     let errors = { email: "", password :""}
 
-    //incorrect email
-    if(err.message === 'Incorrect email') {
-        errors.email = 'That email is not correct'
-    }
+//     //incorrect email
+//     if(err.message === 'Incorrect email') {
+//         errors.email = 'That email is not correct'
+//     }
 
-    //incorrect password
-    if(err.message === 'Incorrect password') {
-        errors.password = 'That password is not correct'
-    };
+//     //incorrect password
+//     if(err.message === 'Incorrect password') {
+//         errors.password = 'That password is not correct'
+//     };
 
 
-    //duplicate error code
-    if(err.code === 11000){
-        errors.email = 'That email is registered';
-        return errors;
-    }
+//     //duplicate error code
+//     if(err.code === 11000){
+//         errors.email = 'That email is registered';
+//         return errors;
+//     }
 
-    //validation errors
-    if(err.message.includes('user validation failed')){
-        Object.values(err.errors).forEach(({properties}) => {
-            errors[properties.path] = properties.message;
-        })
-    }
-    return errors;
-}
+//     //validation errors
+//     if(err.message.includes('user validation failed')){
+//         Object.values(err.errors).forEach(({properties}) => {
+//             errors[properties.path] = properties.message;
+//         })
+//     }
+//     return errors;
+// }
 
-module.exports.signup_get = (req, res) =>{
-    res.send('signup');
-}
+// module.exports.signup_get = (req, res) =>{
+//     res.send('signup');
+// }
 
 module.exports.login_get = (req, res) =>{
     res.redirect('/login')
 }
 
 module.exports.register_post = async (req, res) =>{
-    const { fullname, email, password, bio, location, workExperience, gender, role, username, wallet_address, ratings, profilePicture } = req.body;
+    const { fullname, email, joinedAt, portfolio, password, bio, location, workExperience, SkillAndExpertise, ocuupation, gender, role, username, wallet_address, ratings, profilePicture, certification } = req.body;
     
 
     try{
-        const Finduser = await User.findOne({ email });
+        const Finduser = await User.findOne({ wallet_address });
         if(Finduser){
-            return res.status(400).json({ err: 'Email already exists in database'})
+            return res.status(400).json({ err: 'Account already exists in database'})
         }
-        if(!fullname){
-            return res.status(400).json({message: 'fullname is required for a new account'})
-        }
-        if (!validator.isStrongPassword(password)) {
-            throw Error('Password not strong enough')
-        }
-        const user = await User.create({fullname, email, password,workExperience , bio, location , gender, role, username, wallet_address, ratings, profilePicture});
+        const user = await User.create({fullname, portfolio, email, password,workExperience, joinedAt , ocuupation, SkillAndExpertise, bio, location , gender, role, username, wallet_address, ratings, certification, profilePicture});
         // const json = res.locals.user;
 
         const token = createToken(user._id);
         // res.cookie('jwt', token, {httpOnly :true, maxaAge: 3600 * 1000})
         res.cookie('jwt', token, {httpOnly:true, maxAge: maxAge * 1000, secure: true, // Set to true if using HTTPS
             sameSite: 'lax',})
+        res.cookie('wallet_address', wallet_address, {httpOnly:true, maxAge: maxAge * 9000, secure: true, sameSite: 'lax',})
+        res.status(200).json({message : "Successfully Registered the user", wallet_address : wallet_address});
 
-        res.status(200).json({email});
+    }catch(err){
+        return res.status(400).json({ err: err.message });
+    }
 
+}
+
+module.exports.get_user = async (req, res) =>{
+    const { wallet_address } = req.params;
+    
+
+    try{
+        const data = await User.findOne({ wallet_address });
+        if(data){
+            return res.status(200).json({data})
+        }
     }catch(err){
         return res.status(400).json({ err: err.message });
     }
@@ -113,6 +122,12 @@ module.exports.login_post =  async(req, res) =>{
         if(!Finduser){
             return res.status(400).json({ errors: 'User not found in database'})
         }
+        if(Finduser.email === '' || Finduser.password === ''){
+            return res.status(200).json({message: 'login'})
+        }
+        
+        
+        
         const user = await User.login( email, password );
         const token = createToken(user._id);
         const userId = user._id;
@@ -218,7 +233,7 @@ module.exports.change_password_post = async (req, res)=> {
 
 
 module.exports.update_user_patch = async (req, res) => {
-    const { email, fullname, password, bio, location, workExperience, availableJobs, gender, role } = req.body;
+    const { email, fullname, password, bio, portfolio, occupation, joinedAt, location, workExperience,SkillAndExpertise, gender, role, certification } = req.body;
     const walletAddress = req.params.wallet_address; // Assumes wallet_address is provided in the URL
     
     try {
@@ -250,7 +265,11 @@ module.exports.update_user_patch = async (req, res) => {
         if (gender) user.gender = gender;
         if (role) user.role = role;
         if (workExperience) user.workExperience = workExperience;
-        if (availableJobs) user.availableJobs = availableJobs;
+        if (SkillAndExpertise) user.SkillAndExpertise = SkillAndExpertise;
+        if (certification) user.certification = certification;
+        if (joinedAt) user.joinedAt = joinedAt;
+        if (occupation) user.occupation = occupation
+        if (portfolio) user.portfolio = portfolio
 
 
 
