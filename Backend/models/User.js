@@ -10,18 +10,14 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
-    fullname:{
+    fullname: {
         type: String,
-        required :true,
         lowercase: true,
         trim: true
     },
-    username:{
+    username: {
         type: String,
-        lowercase: true,
-        required: true ,
-        unique: true
-
+        lowercase: true
     },
     home_address: {
         type: String,
@@ -29,65 +25,73 @@ const userSchema = new mongoose.Schema({
     },
     email: {
         unique: true,
-        type : String,
-        required : [true, 'please enter an email'],
-        lowercase : true,
-        validate : [isEmail, 'please enter a valid email']
-    },
-    password : {
         type: String,
-        required : [true, 'please enter a password'],
-        minlength : [8, 'Minimum password length is 8 characters']
+        // required: [true, 'please enter an email'],
+        lowercase: true,
+        validate: [isEmail, 'please enter a valid email']
+    },
+    password: {
+        type: String,
+        // required: [true, 'please enter a password'],
+        minlength: [8, 'Minimum password length is 8 characters']
     },
     otpCode: {
         type: String,
         default: null
     },
-    otpExpiration : {
+    otpExpiration: {  // Corrected 'default'
         type: Date,
-        dafault: null
+        default: null
     },
-    bio: { 
-        type: String, 
-        required: true
-     },
-    dateOfBirth: { 
-        type: Date, 
-    },
-    workExperience: [{ 
-        company: String, 
-        position: String, 
-        years: Number 
-    }],
-    role: { 
-        type: String, 
-        enum: ['employer', 'employee'], 
-        required: true ,
-        lowercase: true,
+    bio: {
+        type: String,
+        lowercase: true
 
     },
-    location: { 
-        type: String, 
-        required: true 
+    dateOfBirth: {
+        type: Date,
     },
-    ratings: { 
-        type: Number, 
-        min: 0, 
-        max: 5, 
-    },
-    feedbacks: [{ 
-        comment: String, 
-        date: { type: Date, default: Date.now } 
+    workExperience: [{
+        company: String,
+        position: String,
+        JoinedFrom: Date,
+        Till: Date,
+        description: String
     }],
-    gender: { 
-        type: String, 
-        enum: ['Male', 'Female', 'Other'], 
-        lowercase: true,
-
+    role: {
+        type: String,
+        enum: ['employer', 'employee'],
+        lowercase: true
     },
-    profilePicture: { 
-        type: String 
-    }, // URL for profile picture
+    location: {
+        type: String
+    },
+    portfolio: {
+        type: String
+    },
+    ratings: {
+        type: Number,
+        min: 0,
+        max: 5,
+    },
+    joinedAt: {
+        type: Date
+    },
+    occupation:{
+        type: String
+    },
+    feedbacks: [{
+        comment: String,
+        date: { type: Date, default: Date.now }
+    }],
+    gender: {
+        type: String,
+        enum: ['male', 'female', 'other'],
+        lowercase: true
+    },
+    profilePicture: {
+        type: String
+    },
     jobsCreated: [{
         title: String,
         description: String,
@@ -96,9 +100,22 @@ const userSchema = new mongoose.Schema({
             type: Boolean,
             default: true
         }
+    }],
+    SkillAndExpertise: [{
+        skill: { type: String, lowercase: true },  // Applied to the string
+        Expertise: { type: String, lowercase: true }  // Applied to the string
+    }],
+    certification: [{
+        role: { type: String, lowercase: true },  // Applied to the string
+        CertificationName: { type: String, lowercase: true },  // Applied to the string
+        certificationStatus: {
+            type: String,  // Added `type`
+            enum: ['completed', 'ongoing']
+        },
+        year: Date
     }]
+});
 
-})
 
 userSchema.pre('save', async function(next){
     const salt = await bcrypt.genSalt();

@@ -14,7 +14,6 @@ app.use(cors({
 }));
 
 
-
 // MongoDB Connection
 const DbUrRI = process.env.DB_URI;
 mongoose.connect(DbUrRI, { useNewUrlParser: true, useUnifiedTopology: true })

@@ -1,12 +1,11 @@
 const { Router } = require('express');
 const authController = require('../controllers/authController');
-const productController = require('../controllers/userProduct');
 
 const router  = Router();
 
-router.get('/signup', authController.signup_get, ()=> {});
+router.get('/user/:wallet_address',authController.get_user, ()=> {});
+
 router.post('/register',authController.register_post, ()=> {});
-router.get('/login', authController.login_get,()=> {});
 router.post('/login', authController.login_post, ()=> {});
 router.post('/forget_password', authController.forget_password_post, ()=> {});
 router.post('/confirm_otp', authController.confirm_otp_post,()=> {});
