@@ -52,7 +52,25 @@ res.status(200).json({
 });
 
 
+Endpoint
 
+GET https://base-hackathon-1.onrender.com/user/wallet_address  GET Request for getting a user infomation 
+
+Example Request
+json
+{
+  "wallet_address": "0x1234567890abcdef"
+}
+Responses
+
+Example Request
+json
+{
+  "wallet_address" :"2000bdjibw",
+  "fullname" : "Hicode morenike",
+  "bio" : "i am grown ass guy with experience with typescript and graphql "
+  and so on 
+}
 
 <!-- Endpoint
 
