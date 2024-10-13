@@ -5,7 +5,7 @@ import GetUser from './components/GetUser'
 const Home = () => {
   return (
     <div>
-      <UpdateUser />
+      {/* <UpdateUser /> */}
       <GetUser />
     </div>
   )
