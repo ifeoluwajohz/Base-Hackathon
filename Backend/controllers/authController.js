@@ -115,20 +115,24 @@ module.exports.get_user = async (req, res) =>{
 }
 
 module.exports.login_post =  async(req, res) =>{
-    const { wallet_address, email, password} = req.body;
+    // const { wallet_address, email, password} = req.body;
+    const { wallet_address} = req.body;
+
 
     try{  
         const Finduser = await User.findOne({ wallet_address });
         if(!Finduser){
             return res.status(400).json({ errors: 'User not found in database'})
         }
-        if(Finduser.email === '' || Finduser.password === ''){
-            return res.status(200).json({message: 'login'})
-        }
+        // if(Finduser.email === '' || Finduser.password === ''){
+        //     return res.status(200).json({message: 'login'})
+        // }
         
         
         
-        const user = await User.login( email, password );
+        // const user = await User.login( email, password );
+        const user = await User.login( wallet_address );
+
         const token = createToken(user._id);
         const userId = user._id;
 
@@ -136,7 +140,7 @@ module.exports.login_post =  async(req, res) =>{
             sameSite: 'lax',})
         res.cookie('wallet_address', wallet_address, {httpOnly:true, maxAge: maxAge * 9000, secure: true, sameSite: 'lax',})
         
-        res.status(200).json({email});
+        res.status(200).json({wallet_address});
 
     }catch(err){
         return res.status(400).json({ err: err.message });

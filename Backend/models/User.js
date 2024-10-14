@@ -3,7 +3,6 @@ const Schema = mongoose.Schema;
 const { isEmail } = require('validator');
 const bcrypt = require('bcrypt');
 
-
 const userSchema = new mongoose.Schema({
     wallet_address: {
         type: String,
@@ -23,16 +22,15 @@ const userSchema = new mongoose.Schema({
         type: String,
         lowercase: true
     },
+
     email: {
-        unique: true,
+        // unique: true,
         type: String,
-        // required: [true, 'please enter an email'],
         lowercase: true,
         validate: [isEmail, 'please enter a valid email']
     },
     password: {
         type: String,
-        // required: [true, 'please enter a password'],
         minlength: [8, 'Minimum password length is 8 characters']
     },
     otpCode: {
@@ -116,24 +114,25 @@ const userSchema = new mongoose.Schema({
     }]
 });
 
+// userSchema.pre('save', async function(next){
+//     const salt = await bcrypt.genSalt();
+//     this.password = await bcrypt.hash(this.password, salt);
+//     next()
+// });
 
-userSchema.pre('save', async function(next){
-    const salt = await bcrypt.genSalt();
-    this.password = await bcrypt.hash(this.password, salt);
-    next()
-});
-
-// static method to login user
-userSchema.statics.login = async function(email, password){
-    const user = await this.findOne({ email });
+// // static method to login user
+userSchema.statics.login = async function(wallet_address){
+    const user = await this.findOne({ wallet_address });
     if (user){
-        const auth = await bcrypt.compare(password, user.password);
-        if(auth){
+        // const auth = await bcrypt.compare(password, user.password);
+        // if(auth){
             return user
         }
-        throw Error('Incorrect password');
-    }
-    throw Error('Incorrect email');
+        // throw Error('Incorrect password');
+        // throw Error('Login error');
+
+    // }
+    // throw Error('Incorrect email');
 };
 
 

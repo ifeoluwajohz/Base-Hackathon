@@ -29,6 +29,7 @@ app.use((err, req, res, next) => {
     res.status(500).json({ err: err.message });
 });
 
+
 // Routes
 const authRoutes = require('./routes/authRoutes');
 const userProduct = require('./routes/authProductRoutes');
