@@ -117,7 +117,7 @@ module.exports.get_user = async (req, res) =>{
 module.exports.login_post =  async(req, res) =>{
     const { wallet_address, email, password} = req.body;
 
-    try{
+    try{  
         const Finduser = await User.findOne({ wallet_address });
         if(!Finduser){
             return res.status(400).json({ errors: 'User not found in database'})
@@ -134,6 +134,8 @@ module.exports.login_post =  async(req, res) =>{
 
         res.cookie('jwt', token, {httpOnly:true, maxAge: maxAge * 1000, secure: true, // Set to true if using HTTPS
             sameSite: 'lax',})
+        res.cookie('wallet_address', wallet_address, {httpOnly:true, maxAge: maxAge * 9000, secure: true, sameSite: 'lax',})
+        
         res.status(200).json({email});
 
     }catch(err){
